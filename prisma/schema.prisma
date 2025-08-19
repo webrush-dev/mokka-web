@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Lead {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  locale          String   @default("bg")
+  name            String?
+  email           String?
+  phone           String?
+  source          String?  // utm_source or "qr"/"ig_dm"
+  consentMarketing Boolean @default(false)
+  tags            String   // JSON string array: ["waitlist","loyalty","party"]
+  utmId           String?
+  
+  // Relations
+  rsvps           RSVP[]
+  loyaltyCard     LoyaltyCard?
+  utm             UTM?     @relation(fields: [utmId], references: [id])
+  
+  @@unique([email])
+  @@index([createdAt])
+  @@index([tags])
+  @@index([utmId])
+}
+
+model RSVP {
+  id         String      @id @default(cuid())
+  createdAt  DateTime    @default(now())
+  name       String
+  email      String
+  phone      String?
+  sessionId  String
+  session    EventSession @relation(fields: [sessionId], references: [id])
+  seats      Int         @default(1)
+  status     RSVPStatus  @default(PENDING)
+  payment    Payment?
+  utmId      String?
+  
+  // Relations
+  lead       Lead?       @relation(fields: [leadId], references: [id])
+  leadId     String?
+  utm        UTM?        @relation(fields: [utmId], references: [id])
+  
+  @@index([email])
+  @@index([sessionId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([utmId])
+}
+
+enum RSVPStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Event {
+  id          String         @id @default(cuid())
+  createdAt   DateTime       @default(now())
+  slug        String         @unique // coffee-tasting, launch-party
+  title       String
+  description String
+  isTicketed  Boolean        @default(false)
+  
+  // Relations
+  sessions    EventSession[]
+  
+  @@index([slug])
+  @@index([createdAt])
+}
+
+model EventSession {
+  id         String   @id @default(cuid())
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id])
+  start      DateTime
+  end        DateTime
+  capacity   Int
+  reserved   Int      @default(0) // derived but denormalized for speed
+  
+  // Relations
+  rsvps      RSVP[]
+  
+  @@index([eventId])
+  @@index([start])
+}
+
+model LoyaltyCard {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  code          String   @unique // short code printed on card QR
+  ownerId       String?  @unique
+  owner         Lead?    @relation(fields: [ownerId], references: [id])
+  stamps        Int      @default(0) // phase 2 digital; initially informational only
+  originBadges  String   // JSON string array
+  
+  @@index([code])
+  @@index([ownerId])
+}
+
+model Payment {
+  id           String @id @default(cuid())
+  rsvpId      String @unique
+  rsvp        RSVP   @relation(fields: [rsvpId], references: [id])
+  amount      Int    // in stotinki
+  currency    String @default("BGN")
+  status      String // created|paid|refunded
+  provider    String // stripe
+  providerRef String?
+  
+  @@index([status])
+  @@index([provider])
+}
+
+model UTM {
+  id        String   @id @default(cuid())
+  source    String?
+  medium    String?
+  campaign  String?
+  content   String?
+  term      String?
+  
+  leads     Lead[]
+  rsvps     RSVP[]
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  name        String   // BG name
+  nameEn      String?  // EN name (optional)
+  description String?  // BG description
+  descriptionEn String? // EN description
+  category    String   // "coffee", "food", "drink", "dessert"
+  price       Int      // in stotinki (e.g., 350 = 3.50 BGN)
+  isAvailable Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  imageUrl    String?
+  allergens   String?  // JSON string array: ["milk", "nuts"]
+  tags        String?  // JSON string array: ["vegan", "gluten-free"]
+  
+  @@index([category])
+  @@index([isAvailable])
+  @@index([isFeatured])
+}
+
+model BusinessHours {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      // 0=Sunday, 1=Monday, etc.
+  openTime  String   // "08:00"
+  closeTime String   // "22:00"
+  isOpen    Boolean  @default(true)
+  note      String?  // "Kitchen closes at 21:00"
+  
+  @@unique([dayOfWeek])
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  name        String   // BG name
+  nameEn      String?  // EN name
+  date        DateTime // Date only
+  isClosed    Boolean  @default(true)
+  openTime    String?  // "10:00" if partial day
+  closeTime   String?  // "18:00" if partial day
+  note        String?  // "New Year's Day"
+  
+  @@index([date])
+}
+
+model Settings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   // JSON string for complex values
+  description String?
+  updatedAt   DateTime @updatedAt
+  
+  @@index([key])
+}
