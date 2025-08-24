@@ -5,8 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useState } from 'react';
-import { Coffee, MapPin, Instagram, Facebook, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Coffee, MapPin, Instagram, Facebook, Calendar, Clock } from 'lucide-react';
+import RSVPModal from '../landing/rsvp-modal';
+import { toast } from 'sonner';
+
+// Types for events
+interface EventSession {
+  id: string;
+  start: string;
+  end: string;
+  capacity: number;
+  reserved: number;
+}
+
+interface Event {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  isTicketed: boolean;
+  sessions: EventSession[];
+}
 
 export function CountdownPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -16,6 +36,67 @@ export function CountdownPage() {
     phone: '',
     consent: false,
   });
+
+  // Events state
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  
+  // Modal states
+  const [isRSVPModalOpen, setIsRSVPModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedSession, setSelectedSession] = useState<EventSession | null>(null);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+
+  // Fetch events on component mount
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/admin/events');
+        if (response.ok) {
+          const data = await response.json();
+          // The API returns { events: [...] }, so we need to access data.events
+          setEvents(data.events || []);
+        } else {
+          console.error('Failed to fetch events');
+          setEvents([]);
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        setEvents([]);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // Handle RSVP button click
+  const handleRSVPClick = (event: Event) => {
+    setSelectedEvent(event);
+    // If event has multiple sessions, show session selection
+    if (event.sessions && event.sessions.length > 1) {
+      // For now, just select the first available session
+      // In the future, we could show a session picker modal
+      const availableSession = event.sessions.find(s => s.capacity > s.reserved);
+      setSelectedSession(availableSession || event.sessions[0]);
+    } else if (event.sessions && event.sessions.length === 1) {
+      setSelectedSession(event.sessions[0]);
+    }
+    setIsRSVPModalOpen(true);
+  };
+
+  // Handle notification button click
+  const handleNotificationClick = (event: Event) => {
+    setSelectedEvent(event);
+    setIsNotificationModalOpen(true);
+  };
+
+  // Handle RSVP success
+  const handleRSVPSuccess = () => {
+    // Refresh events to update availability
+    window.location.reload();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,33 +216,95 @@ export function CountdownPage() {
           Събития
         </h2>
         
-        <div className="grid md:grid-cols-2 gap-8">
-          <Card className="bg-white border-mokka-tq/20">
-            <CardHeader>
-              <CardTitle className="text-mokka-tq">Coffee Tasting</CardTitle>
-              <CardDescription>Петък 05.09 • 18:30 / 19:30</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-mokka-gy mb-4">24 места за дегустация на специализирани кафета</p>
-              <Button className="w-full bg-mokka-tq hover:bg-mokka-tq/90">
-                RSVP
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white border-mokka-br/20">
-            <CardHeader>
-              <CardTitle className="text-mokka-br">Launch Party</CardTitle>
-              <CardDescription>Събота 06.09 • 17:00–20:00</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-mokka-gy mb-4">Празнуваме откриването с Mokka</p>
-              <Button variant="outline" className="w-full border-mokka-br text-mokka-br hover:bg-mokka-br hover:text-white">
-                Напомни ми
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        {isLoadingEvents ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mokka-tq mx-auto mb-4"></div>
+            <p className="text-mokka-gy/70">Зареждане на събития...</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-8">
+            {events.map((event) => (
+              <Card 
+                key={event.id} 
+                className={`bg-white ${
+                  event.slug === 'coffee-tasting' 
+                    ? 'border-mokka-tq/20' 
+                    : 'border-mokka-br/20'
+                }`}
+              >
+                <CardHeader>
+                  <CardTitle className={
+                    event.slug === 'coffee-tasting' ? 'text-mokka-tq' : 'text-mokka-br'
+                  }>
+                    {event.title}
+                  </CardTitle>
+                  <CardDescription>
+                                            {event.sessions?.length > 0 && (
+                          <div className="space-y-1">
+                            {event.sessions.map((session: EventSession) => (
+                              <div key={session.id} className="flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                <span>
+                                  {new Date(session.start).toLocaleDateString('bg-BG', {
+                                    weekday: 'long',
+                                    month: 'numeric',
+                                    day: 'numeric'
+                                  })} • {new Date(session.start).toLocaleTimeString('bg-BG', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}–{new Date(session.end).toLocaleTimeString('bg-BG', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-mokka-gy mb-4">{event.description}</p>
+                  
+                  {/* Show availability for Coffee Tasting */}
+                  {event.slug === 'coffee-tasting' && event.sessions && (
+                    <div className="mb-4 p-3 bg-mokka-cr/30 rounded-lg">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-mokka-gy/70">Доступни места:</span>
+                        <span className="font-semibold text-mokka-tq">
+                          {event.sessions.reduce((total: number, session: EventSession) => 
+                            total + (session.capacity - session.reserved), 0
+                          )} / {event.sessions.reduce((total: number, session: EventSession) => 
+                            total + session.capacity, 0
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    {event.slug === 'coffee-tasting' ? (
+                      <Button 
+                        className="w-full bg-mokka-tq hover:bg-mokka-tq/90 text-white"
+                        onClick={() => handleRSVPClick(event)}
+                      >
+                        RSVP
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-mokka-br text-mokka-br hover:bg-mokka-br hover:text-white"
+                        onClick={() => handleNotificationClick(event)}
+                      >
+                        Напомни ми
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </section>
 
@@ -298,6 +441,107 @@ export function CountdownPage() {
         </div>
       </div>
     </footer>
+
+    {/* RSVP Modal */}
+    {selectedEvent && selectedSession && (
+      <RSVPModal
+        isOpen={isRSVPModalOpen}
+        onClose={() => {
+          setIsRSVPModalOpen(false);
+          setSelectedEvent(null);
+          setSelectedSession(null);
+        }}
+        eventTitle={selectedEvent.title}
+        session={selectedSession}
+        onRSVPSuccess={handleRSVPSuccess}
+      />
+    )}
+
+    {/* Notification Modal */}
+    {isNotificationModalOpen && selectedEvent && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-xl text-mokka-gy">
+              Напомняне за {selectedEvent.title}
+            </CardTitle>
+            <CardDescription>
+              Ще ти изпратим напомняне преди събитието
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const email = formData.get('email') as string;
+              const phone = formData.get('phone') as string;
+              
+              try {
+                const response = await fetch('/api/notify', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    email,
+                    phone,
+                    event: selectedEvent.slug,
+                    locale: 'bg'
+                  })
+                });
+                
+                if (response.ok) {
+                  toast.success('Ще ти изпратим напомняне!');
+                  setIsNotificationModalOpen(false);
+                  setSelectedEvent(null);
+                } else {
+                  const data = await response.json();
+                  toast.error(data.error || 'Възникна грешка');
+                }
+              } catch (error) {
+                toast.error('Възникна грешка при обработката');
+              }
+            }} className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-mokka-gy">Имейл *</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone" className="text-mokka-gy">Телефон (по желание)</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsNotificationModalOpen(false);
+                    setSelectedEvent(null);
+                  }}
+                  className="flex-1"
+                >
+                  Отказ
+                </Button>
+                <Button type="submit" className="flex-1 bg-mokka-br hover:bg-mokka-br/90 text-white">
+                  Изпрати
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )}
   </div>
 );
 }

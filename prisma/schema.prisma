@@ -43,6 +43,7 @@ model RSVP {
   session    EventSession @relation(fields: [sessionId], references: [id])
   seats      Int         @default(1)
   status     RSVPStatus  @default(PENDING)
+  reservationCode String  @unique // Unique code for this reservation
   payment    Payment?
   utmId      String?
   
@@ -56,6 +57,7 @@ model RSVP {
   @@index([status])
   @@index([createdAt])
   @@index([utmId])
+  @@index([reservationCode])
 }
 
 enum RSVPStatus {
@@ -188,4 +190,16 @@ model Settings {
   updatedAt   DateTime @updatedAt
   
   @@index([key])
+}
+
+model VerificationCode {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  code       String
+  expiresAt  DateTime
+  action     String   // 'cancel', 'modify'
+  createdAt  DateTime @default(now())
+  
+  @@index([email])
+  @@index([expiresAt])
 }
