@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import { prisma } from '@/lib/db';
 
+// Force dynamic rendering to prevent build-time database access
+export const dynamic = 'force-dynamic';
+
 // Real data from database
 async function getDashboardData() {
   try {

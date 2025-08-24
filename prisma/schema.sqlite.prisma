@@ -1,4 +1,4 @@
-// This is your Prisma schema file for PostgreSQL production
+// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -6,12 +6,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model Lead {
   id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
   locale          String   @default("bg")
   name            String?
   email           String?
@@ -27,12 +28,14 @@ model Lead {
   utm             UTM?     @relation(fields: [utmId], references: [id])
   
   @@unique([email])
+  @@index([createdAt])
   @@index([tags])
   @@index([utmId])
 }
 
 model RSVP {
   id         String      @id @default(cuid())
+  createdAt  DateTime    @default(now())
   name       String
   email      String
   phone      String?
@@ -52,6 +55,7 @@ model RSVP {
   @@index([email])
   @@index([sessionId])
   @@index([status])
+  @@index([createdAt])
   @@index([utmId])
   @@index([reservationCode])
 }
@@ -64,6 +68,7 @@ enum RSVPStatus {
 
 model Event {
   id          String         @id @default(cuid())
+  createdAt   DateTime       @default(now())
   slug        String         @unique // coffee-tasting, launch-party
   title       String
   description String
@@ -73,6 +78,7 @@ model Event {
   sessions    EventSession[]
   
   @@index([slug])
+  @@index([createdAt])
 }
 
 model EventSession {
@@ -92,26 +98,16 @@ model EventSession {
 }
 
 model LoyaltyCard {
-  id        String   @id @default(cuid())
-  leadId    String   @unique
-  lead      Lead     @relation(fields: [leadId], references: [id])
-  points    Int      @default(0)
-  tier      String   @default("bronze") // bronze, silver, gold, platinum
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  code          String   @unique // short code printed on card QR
+  ownerId       String?  @unique
+  owner         Lead?    @relation(fields: [ownerId], references: [id])
+  stamps        Int      @default(0) // phase 2 digital; initially informational only
+  originBadges  String   // JSON string array
   
-  @@index([points])
-  @@index([tier])
-}
-
-model UTM {
-  id        String   @id @default(cuid())
-  source    String?
-  medium    String?
-  campaign  String?
-  content   String?
-  term      String?
-  
-  leads     Lead[]
-  rsvps     RSVP[]
+  @@index([code])
+  @@index([ownerId])
 }
 
 model Payment {
@@ -128,31 +124,38 @@ model Payment {
   @@index([provider])
 }
 
-
+model UTM {
+  id        String   @id @default(cuid())
+  source    String?
+  medium    String?
+  campaign  String?
+  content   String?
+  term      String?
+  
+  leads     Lead[]
+  rsvps     RSVP[]
+}
 
 model MenuItem {
   id          String   @id @default(cuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
   name        String   // BG name
   nameEn      String?  // EN name (optional)
   description String?  // BG description
   descriptionEn String? // EN description
-  price       Float
-  category    String   // coffee, food, dessert, beverage
+  category    String   // "coffee", "food", "drink", "dessert"
+  price       Int      // in stotinki (e.g., 350 = 3.50 BGN)
   isAvailable Boolean  @default(true)
   isFeatured  Boolean  @default(false)
   imageUrl    String?
   allergens   String?  // JSON string array: ["milk", "nuts"]
-  origin      String?  // country of origin for coffee
-  roastLevel  String?  // light, medium, dark
-  tags        String?  // JSON string array: ["organic", "fair_trade"]
+  tags        String?  // JSON string array: ["vegan", "gluten-free"]
   
   @@index([category])
   @@index([isAvailable])
   @@index([isFeatured])
-  @@index([price])
-  @@index([tags])
 }
 
 model BusinessHours {
@@ -168,39 +171,15 @@ model BusinessHours {
 
 model Holiday {
   id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
   name        String   // BG name
   nameEn      String?  // EN name
-  date        DateTime
+  date        DateTime // Date only
   isClosed    Boolean  @default(true)
-  isOpen      Boolean  @default(false)
-  openTime    String?  // "10:00" (if partial day)
-  closeTime   String?  // "18:00" (if partial day)
+  openTime    String?  // "10:00" if partial day
+  closeTime   String?  // "18:00" if partial day
   note        String?  // "New Year's Day"
   
   @@index([date])
-  @@index([isOpen])
-}
-
-model GeneralSettings {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  businessName      String   @default("Mokka")
-  businessPhone     String?
-  businessEmail     String?
-  businessAddress   String?
-  businessWebsite   String?
-  businessDescription String?
-  socialMedia       String?  // JSON object: {"instagram": "@mokka", "facebook": "mokka"}
-  logoUrl           String?
-  primaryColor      String?  // hex color
-  secondaryColor    String?  // hex color
-  timezone          String   @default("Europe/Sofia")
-  currency          String   @default("BGN")
-  language          String   @default("bg")
-  
-  @@index([createdAt])
 }
 
 model Settings {

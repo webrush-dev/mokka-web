@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma, stringifyTags } from '@/lib/db'
 import { z } from 'zod'
 
+// Force dynamic rendering to prevent build-time database access
+export const dynamic = 'force-dynamic';
+
 const rsvpSchema = z.object({
   name: z.string().min(1, 'Името е задължително'),
   email: z.string().email('Невалиден имейл адрес'),

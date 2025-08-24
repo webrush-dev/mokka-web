@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
+// Force dynamic rendering to prevent build-time database access
+export const dynamic = 'force-dynamic';
+
 const eventUpdateSchema = z.object({
   title: z.string().min(1, 'Заглавието е задължително'),
   description: z.string().min(1, 'Описанието е задължително'),
