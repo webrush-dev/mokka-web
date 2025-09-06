@@ -24,7 +24,7 @@ if [ "$1" = "production" ]; then
     echo "   DATABASE_URL=\"postgres://your-connection-string\""
     echo ""
     echo "🔗 Your Vercel PostgreSQL connection string:"
-    echo "   postgres://a7c9dff08e91abd5816750a81cbfa990f8cb1c8d164864ee51b2fdd05294a28f:sk_QkfNqtO7bdJAXZmisJW_e@db.prisma.io:5432/?sslmode=require"
+    echo "   postgres://username:password@host:port/database"
     
 elif [ "$1" = "development" ]; then
     echo "🛠️  Switching to DEVELOPMENT (SQLite)"

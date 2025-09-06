@@ -96,6 +96,7 @@ export default function RSVPModal({ isOpen, onClose, session, eventTitle, onRSVP
           <div>
             <p>{data.message || 'Резервацията е направена успешно!'}</p>
             <p className="text-sm mt-1">Код за резервация: <span className="font-mono font-bold">{reservationCode}</span></p>
+            <p className="text-xs mt-2 text-gray-600">Запазете този код! Ще го използвате за управление на резервацията.</p>
           </div>
         )
         onClose()

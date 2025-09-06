@@ -22,7 +22,6 @@ async function getDashboardData() {
   try {
     const [leads, events, rsvps] = await Promise.all([
       prisma.lead.findMany({
-        orderBy: { createdAt: 'desc' },
         take: 50,
       }),
       prisma.event.findMany({
@@ -54,7 +53,6 @@ async function getDashboardData() {
       name: lead.name || 'Анонимен',
       email: lead.email || 'Без имейл',
       source: lead.source || 'website',
-      date: lead.createdAt.toLocaleDateString('bg-BG'),
       consent: lead.consentMarketing,
     }));
 

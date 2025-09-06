@@ -23,8 +23,7 @@ export async function GET() {
         sessions: {
           orderBy: { start: 'asc' }
         }
-      },
-      orderBy: { createdAt: 'desc' }
+      }
     })
 
     return NextResponse.json({ events })

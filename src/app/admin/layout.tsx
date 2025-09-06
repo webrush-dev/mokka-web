@@ -1,14 +1,13 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, Users, Settings, Coffee, Utensils } from 'lucide-react'
+import { Calendar, Users, Settings, Coffee, Utensils, LogOut } from 'lucide-react'
+import { verifyAdminSession } from '@/lib/auth'
 
-// Simple auth check - in production, use proper authentication
+// Check authentication for admin routes
 async function checkAuth() {
-  // For now, just check if we're in development
-  if (process.env.NODE_ENV === 'production') {
-    // In production, implement proper auth check
-    // const session = await getServerSession()
-    // if (!session) redirect('/login')
+  const isAuthenticated = await verifyAdminSession()
+  if (!isAuthenticated) {
+    redirect('/admin-login')
   }
 }
 
@@ -29,6 +28,15 @@ export default async function AdminLayout({
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-mokka-cr/80">Admin Panel</span>
+              <form action="/api/auth/logout" method="post">
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 px-3 py-2 text-sm text-mokka-cr/80 hover:text-white hover:bg-mokka-cr/20 rounded-md transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </form>
             </div>
           </div>
         </div>

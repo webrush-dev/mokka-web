@@ -12,7 +12,7 @@ if [ "$1" = "production" ]; then
     echo "📦 Setting up PRODUCTION environment (PostgreSQL)"
     
     # Update .env with PostgreSQL connection
-    echo 'DATABASE_URL="postgres://a7c9dff08e91abd5816750a81cbfa990f8cb1c8d164864ee51b2fdd05294a28f:sk_QkfNqtO7bdJAXZmisJW_e@db.prisma.io:5432/?sslmode=require"' > .env
+    echo 'DATABASE_URL="postgres://username:password@host:port/database"' > .env
     
     echo "✅ Production environment set!"
     echo "📝 .env updated with PostgreSQL connection string"

@@ -80,7 +80,7 @@ DATABASE_URL="postgres://username:password@host:port/database"
 
 ### Your Vercel PostgreSQL Connection:
 ```
-DATABASE_URL="postgres://a7c9dff08e91abd5816750a81cbfa990f8cb1c8d164864ee51b2fdd05294a28f:sk_QkfNqtO7bdJAXZmisJW_e@db.prisma.io:5432/?sslmode=require"
+DATABASE_URL="postgres://username:password@host:port/database"
 ```
 
 ## 🐛 Troubleshooting

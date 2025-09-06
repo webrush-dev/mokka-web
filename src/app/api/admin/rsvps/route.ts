@@ -14,9 +14,6 @@ export async function GET() {
             event: true
           }
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
       }
     })
 
@@ -56,8 +53,7 @@ export async function GET() {
         phone: rsvp.phone || undefined,
         seats: rsvp.seats,
         status: rsvp.status,
-        reservationCode: rsvp.reservationCode,
-        createdAt: rsvp.createdAt.toISOString()
+        reservationCode: rsvp.reservationCode
       })
       
       return acc
@@ -66,7 +62,7 @@ export async function GET() {
       sessions: Record<string, {
         session: { id: string; start: string; end: string; capacity: number; reserved: number };
         rsvps: Array<{
-          id: string; name: string; email: string; phone?: string; seats: number; status: string; reservationCode: string; createdAt: string;
+          id: string; name: string; email: string; phone?: string; seats: number; status: string; reservationCode: string;
         }>;
       }>;
     }>)
