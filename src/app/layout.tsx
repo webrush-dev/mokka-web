@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mokka - Coming Soon",
+  title: "Mokka - Specialty Coffee",
   description: "Mokka is opening soon! Join our community and be the first to experience our unique coffee culture.",
   icons: {
     icon: '/mokka.ico',
